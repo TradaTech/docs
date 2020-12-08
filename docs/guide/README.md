@@ -61,7 +61,7 @@ First, rename the the class to `SimpleStore` and add a field named `value`.
 There is one thing to note. Although `value` is a contract _field_, its value _may not persist_ between external calls (that is, calls from client or from other contracts). The reason is that, due to memory restriction, the blockchain runtime might choose to serialize some of the contract instances to disk and load them back later. During this process, regular fields' values are discarded. To keep a field's value, you need to mark it with `@state`.
 ```javascript{2}
 @contract class SimpleStore {
-  @state value = 0
+  @state value: number = 0
 }
 ```
 Now `value`'s value will persist between external calls. We can say it is part of the contract's _persistent state_, or just _state_ for short.
@@ -75,12 +75,12 @@ Not every JavaScript type can be marked as `@state`. Currently, only values of t
 Next, let's add getter and setter for `value`.
 ```javascript
 @contract class SimpleStore {
-  @state value = 0
+  @state value: number = 0
   getValue() {
-    return this.value
+    return this.value.value()
   }
   setValue(value) {
-    this.value = value
+    this.value.value(value)
   }
 }
 ```
@@ -104,12 +104,12 @@ In our example, `getValue` reads contract state (i.e. `value`) while `setValue` 
 
 ```js{3,6}
 @contract class SimpleStore {
-  @state value = 0
+  @state value: number = 0
   @view getValue() {
-    return this.value
+    return this.value.value()
   }
   @transaction setValue(value) {
-    this.value = value
+    this.value.value(value)
   }
 }
 ```
@@ -117,9 +117,9 @@ In our example, `getValue` reads contract state (i.e. `value`) while `setValue` 
 You can also remove `getValue` method and make `value` externally assessible by marking it with `@view`.
 ```js{2}
 @contract class SimpleStore {
-  @view @state value = 0
+  @view @state value: number = 0
   @transaction setValue(value) {
-    this.value = value
+    this.value.value(value)
   }
 }
 ```
@@ -157,7 +157,7 @@ But what if you want to store only numbers? Just add some [Flow](https://flow.or
 @contract class SimpleStore {
   @view @state value: number = 0
   @transaction setValue(value: number) {
-    this.value = value
+    this.value.value(value)
   }
 }
 ```
@@ -179,7 +179,7 @@ Now, let's add one more requirement: our `SimpleStore` shall accept only _non-ne
     if (value < 0 || !Number.isInteger(value)) {
       throw new Error('Value must be a non-negative integer.')
     }
-    this.value = value
+    this.value.value(value)
   }
 }
 ```
@@ -201,7 +201,7 @@ const Joi = require('@hapi/joi')
     if (error) {
       throw error
     }
-    this.value = value
+    this.value.value(value)
   }
 }
 ```
@@ -222,10 +222,10 @@ const { validate } = require(';')
 @contract class SimpleStore {
   @view @state value: number = 0
   @transaction setValue(value: number) {
-    this.value = validate(
+    this.value.value(validate(
       value, // value to validate
       Joi.number().integer().min(0) // schema
-    )
+    ))
   }
 }
 ```
@@ -358,10 +358,10 @@ class SimpleStore {
     const oldValue = this.value
 
     // validate and sanitize input
-    this.value = validate(
+    this.value.value(validate(
       value, // value to validate
       Joi.number().integer().min(0) // schema
-    )
+    ))
 
     // emit event
     this.emitEvent('ValueSet', {
